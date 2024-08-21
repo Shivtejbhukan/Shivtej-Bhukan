@@ -1,0 +1,47 @@
+-- 1) To display customer details who have applied for a loan of 5,00,000.
+
+CREATE OR REPLACE VIEW V1 AS
+SELECT A.C_NAME, A.CITY FROM CUSTOMER A, LOAN_APP B, TERNARY C WHERE A.C_NO=C.C_NO AND
+B.L_NO=C.L_NO AND L_AMT_REQ>='500000';
+
+-- 2) To display loan details from the ‘Aundh’ branch.
+
+CREATE OR REPLACE VIEW V2 AS
+SELECT A.* FROM LOAN_APP A, BRANCH B, TERNARY C WHERE A.L_NO=C.L_NO AND B.B_ID=C.B_ID
+AND B.BR_NAME='AUNDH BRANCH';
+
+/*1. Write a trigger to validate the loan amount approved. It must be less than or equal to loan
+amount required. Display appropriate message.*/
+
+CREATE OR REPLACE FUNCTION VAL_AMT() RETURNS TRIGGER AS'
+DECLARE
+BEGIN
+IF (NEW.L_AMT_APPROVED > NEW.L_AMT_REQ) THEN
+RAISE EXCEPTION ''VALIDATION FAILED '';
+ELSE
+RAISE INFO ''VALIDATION SUCCESS'';
+END IF;
+RETURN NEW;
+END;
+'LANGUAGE 'plpgsql';
+CREATE TRIGGER UPD
+BEFORE INSERT ON LOAN_APP
+FOR EACH ROW
+EXECUTE PROCEDURE VAL_AMT();
+
+
+/*2. Write a stored function to count number of customers of particular branch. (Accept branch
+name as an input parameter). Display message for invalid branch name.*/
+
+CREATE OR REPLACE FUNCTION CUST_CNT(BRNAME TEXT) RETURNS INT AS'
+DECLARE
+CNT INT;
+BEGIN
+SELECT INTO CNT COUNT(A.C_NO) FROM CUSTOMER A, BRANCH B, TERNARY C WHERE
+A.C_NO=C.C_NO AND B.B_ID=C.B_ID AND BRNAME=B.BR_NAME;
+IF CNT=0 THEN
+RAISE NOTICE ''INVALID BRANCH NAME !'';
+END IF;
+RETURN CNT;
+END;
+'LANGUAGE 'plpgsql';
